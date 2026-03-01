@@ -1,10 +1,22 @@
 <script type="text/x-red" data-template-name="custom-trigger">
     <div class="form-row">
-        <label for="node-input-mustInclude"><i class="fa fa-tag"></i> Text enthalten</label>
+        <label for="node-input-sensors">Sensoren (Topic)</label>
+        <input type="text" id="node-input-sensors" placeholder="Kommagetrennt">
+    </div>
+    <div class="form-row">
+        <label for="node-input-mustInclude">Text enthalten</label>
         <input type="text" id="node-input-mustInclude" placeholder="z.B. Ein">
     </div>
     <div class="form-row">
-        <label for="node-input-direction"><i class="fa fa-random"></i> Richtung</label>
+        <label for="node-input-useRegex">Regex benutzen</label>
+        <input type="checkbox" id="node-input-useRegex">
+    </div>
+    <div class="form-row">
+        <label for="node-input-pattern">Regex-Muster</label>
+        <input type="text" id="node-input-pattern" placeholder="z.B. ^Ein|Start$">
+    </div>
+    <div class="form-row">
+        <label for="node-input-direction">Richtung</label>
         <select id="node-input-direction">
             <option value="Ein→Aus">Ein → Aus</option>
             <option value="Aus→Ein">Aus → Ein</option>
@@ -12,11 +24,19 @@
         </select>
     </div>
     <div class="form-row">
-        <label for="node-input-debug"><i class="fa fa-bug"></i> Debug</label>
+        <label for="node-input-triggerOnFirstMessage">Trigger bei erster Nachricht</label>
+        <input type="checkbox" id="node-input-triggerOnFirstMessage">
+    </div>
+    <div class="form-row">
+        <label for="node-input-cooldown">Cooldown (ms)</label>
+        <input type="number" id="node-input-cooldown" placeholder="0">
+    </div>
+    <div class="form-row">
+        <label for="node-input-debug">Debug</label>
         <input type="checkbox" id="node-input-debug">
     </div>
 </script>
 
 <script type="text/x-red" data-help-name="custom-trigger">
-    <p>Custom Trigger Node: feuert Nachrichten, wenn der Sensortext enthalten ist und die gewählte Richtung passt.</p>
+    <p>Super Trigger Node: feuert nur bei Textmatch + gewählter Richtung. Unterstützt Regex, mehrere Sensoren, Cooldown und Sofort-Trigger.</p>
 </script>

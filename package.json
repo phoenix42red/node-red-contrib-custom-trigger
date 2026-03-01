@@ -1,7 +1,7 @@
 {
   "name": "node-red-contrib-custom-trigger",
   "version": "1.0.0",
-  "description": "Custom Trigger Node: beliebiger Text + Richtung",
+  "description": "Custom Trigger Node: Multi-Sensor, Text/Regex, Richtung, Cooldown",
   "keywords": ["node-red", "trigger", "custom"],
   "node-red": {
     "nodes": {
