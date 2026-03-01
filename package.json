@@ -1,0 +1,14 @@
+{
+  "name": "node-red-contrib-custom-trigger",
+  "version": "1.0.0",
+  "description": "Custom Trigger Node: beliebiger Text + Richtung",
+  "keywords": ["node-red", "trigger", "custom"],
+  "node-red": {
+    "nodes": {
+      "custom-trigger": "custom-trigger.js"
+    }
+  },
+  "author": "Dein Name",
+  "license": "MIT",
+  "dependencies": {}
+}

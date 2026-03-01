@@ -1,0 +1,22 @@
+<script type="text/x-red" data-template-name="custom-trigger">
+    <div class="form-row">
+        <label for="node-input-mustInclude"><i class="fa fa-tag"></i> Text enthalten</label>
+        <input type="text" id="node-input-mustInclude" placeholder="z.B. Ein">
+    </div>
+    <div class="form-row">
+        <label for="node-input-direction"><i class="fa fa-random"></i> Richtung</label>
+        <select id="node-input-direction">
+            <option value="Ein→Aus">Ein → Aus</option>
+            <option value="Aus→Ein">Aus → Ein</option>
+            <option value="Beide">Beide</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-debug"><i class="fa fa-bug"></i> Debug</label>
+        <input type="checkbox" id="node-input-debug">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="custom-trigger">
+    <p>Custom Trigger Node: feuert Nachrichten, wenn der Sensortext enthalten ist und die gewählte Richtung passt.</p>
+</script>
