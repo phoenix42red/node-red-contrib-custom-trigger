@@ -1,8 +1,8 @@
 {
   "name": "node-red-contrib-custom-trigger",
-  "version": "1.0.0",
-  "description": "Custom Trigger Node für NodeRED",
-  "keywords": ["node-red", "trigger", "custom"],
+  "version": "1.1.0",
+  "description": "Custom Trigger Node für NodeRED (flexible vorher/nachher Werte)",
+  "keywords": ["node-red","trigger","custom"],
   "node-red": {
     "nodes": {
       "custom-trigger": "custom-trigger.js"

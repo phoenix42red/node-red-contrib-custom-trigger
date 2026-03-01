@@ -4,10 +4,11 @@ module.exports = function(RED) {
         var node = this;
 
         node.sensors = config.sensors || [];
-        node.mustInclude = config.mustInclude || "Ein";
+        node.previousMustInclude = config.previousMustInclude || "";
+        node.mustInclude = config.mustInclude || "";
         node.useRegex = config.useRegex || false;
         node.pattern = config.pattern || "";
-        node.direction = config.direction || "Ein→Aus";
+        node.direction = config.direction || "Beide";
         node.debug = config.debug || false;
         node.triggerOnFirstMessage = config.triggerOnFirstMessage || false;
         node.cooldown = config.cooldown || 0;
@@ -30,35 +31,22 @@ module.exports = function(RED) {
             let now = Date.now();
             if(node.lastTriggered[sensorId] && (now - node.lastTriggered[sensorId] < node.cooldown)) return null;
 
-            let match = false;
-            if(node.useRegex && node.pattern){
-                const regex = new RegExp(node.pattern, "i");
-                match = regex.test(newState);
-            } else {
-                match = newState.includes(node.mustInclude);
-            }
-
-            if(!match){
-                node.context().flow.set(`lastState_${sensorId}`, newState);
-                return null;
-            }
+            let matchNew = node.mustInclude ? (node.useRegex ? new RegExp(node.pattern,"i").test(newState) : newState.includes(node.mustInclude)) : true;
+            let matchOld = node.previousMustInclude ? lastState.includes(node.previousMustInclude) : true;
 
             let trigger = false;
-            if((node.direction === "Ein→Aus" || node.direction === "Beide") &&
-               lastState.includes(node.mustInclude) && newState.includes("Aus")) trigger = true;
-
-            if((node.direction === "Aus→Ein" || node.direction === "Beide") &&
-               lastState.includes("Aus") && newState.includes(node.mustInclude)) trigger = true;
+            if(matchOld && matchNew){
+                if(node.direction === "Beide" || node.direction === "Vorher→Nachher") trigger = true;
+            }
 
             if(trigger){
                 node.context().flow.set(`lastState_${sensorId}`, newState);
                 node.lastTriggered[sensorId] = now;
                 if(node.debug) node.warn(`Trigger ausgelöst: ${lastState} → ${newState} (Sensor: ${sensorId})`);
                 node.send(msg);
-                return;
+            } else {
+                node.context().flow.set(`lastState_${sensorId}`, newState);
             }
-
-            node.context().flow.set(`lastState_${sensorId}`, newState);
         });
     }
     RED.nodes.registerType("custom-trigger", CustomTriggerNode);
