@@ -39,7 +39,14 @@ module.exports = function(RED) {
             }
 
             // Immer als String behandeln
-            newValue = (typeof newValue === "object") ? JSON.stringify(newValue) : String(newValue || "");
+            //newValue = (typeof newValue === "object") ? JSON.stringify(newValue) : String(newValue || "");
+            if (typeof newValue === "object") {
+                newValue = JSON.stringify(newValue);
+            } else if (newValue === undefined || newValue === null) {
+                newValue = "";
+            } else {
+                newValue = String(newValue);
+            }
 
             // Letzter bekannter Wert
             let lastValue = node.context().flow.get(flowKey) || "";
@@ -119,4 +126,5 @@ module.exports = function(RED) {
     }
 
     RED.nodes.registerType("custom-trigger", CustomTriggerNode);
+
 }
