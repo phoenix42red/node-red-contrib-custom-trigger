@@ -2,151 +2,86 @@ module.exports = function(RED) {
     function CustomTriggerNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
-		
-       
-		// Einstellungen
-        node.name = config.name;
-        node.sensors = config.sensors
-            ? config.sensors.split(",").map(s => s.trim())
-            : [];
 
-        node.beforeText = config.beforeText || "";
-        node.afterText = config.afterText || "";
+        // Node-Konfiguration
+        node.name = config.name || "";
+        node.mustInclude = config.mustInclude || "";       // Textfilter optional
         node.useRegex = config.useRegex || false;
         node.pattern = config.pattern || "";
-        node.triggerOnFirstMessage =
-            config.triggerOnFirstMessage || true;
-        node.cooldown = Number(config.cooldown) || 0;
+        node.direction = config.direction || "Beide";      // "Ein→Aus", "Aus→Ein", "Beide"
         node.debug = config.debug || false;
+        node.triggerOnFirstMessage = config.triggerOnFirstMessage || false;
+        node.cooldown = config.cooldown || 0;
 
-        // interne Daten
-        node.lastTriggered = {};
-        node.triggerCount = 0;
+        node.lastTriggered = {};  // Zeitstempel für Cooldown
+        const flowKey = `lastMsg_${node.id}`; // Flow-Context-Key
 
-        // Startstatus
-        node.status({
-            fill: "grey",
-            shape: "ring",
-            text: "bereit"
-        });
         node.on('input', function(msg) {
-            node.status({
-                fill: "blue",
-                shape: "ring",
-                text: "warte"
-            });
-            const sensorId = msg.topic || "default";
-            if (node.sensors.length) {
-                if (!node.sensors.includes(sensorId)) {
-                    return;
-                }
-            }
-            let newState =
-                msg.data?.event?.new_state?.state
-                || msg.payload
-                || "";
-            let lastState =
-                node.context().flow.get(
-                    `lastState_${sensorId}`
-                ) || "";
-            if (newState === "") {
-                node.status({
-                    fill: "red",
-                    shape: "dot",
-                    text: "kein State"
-                });
-                return;
-            }
-            if (!lastState && node.triggerOnFirstMessage) {
-                node.context().flow.set(
-                    `lastState_${sensorId}`,
-                    newState
-                );
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text: "erste Nachricht"
-                });
-                node.send(msg);
-                return;
-            }
-            let now = Date.now();
-            if (
-                node.lastTriggered[sensorId] &&
-                (now - node.lastTriggered[sensorId]
-                    < node.cooldown)
-            ) {
-                let rest = Math.ceil(
+            // Aktueller Wert der kompletten Nachricht als String
+            let newValue = JSON.stringify(msg);
 
-                    (node.cooldown -
-                    (now - node.lastTriggered[sensorId]))
-                    / 1000
-                );
-                node.status({
-                    fill: "yellow",
-                    shape: "ring",
-                    text: `Cooldown ${rest}s`
-                });
-                return;
+            // Letzter bekannter Wert
+            let lastValue = node.context().flow.get(flowKey) || "";
+
+            // Trigger bei erster Nachricht
+            if(!lastValue && node.triggerOnFirstMessage){
+                node.context().flow.set(flowKey, newValue);
+                if(node.debug) node.warn(`Trigger (erste Nachricht) ausgelöst: ${newValue}`);
+                return msg;
             }
-            let beforeMatch = true;
-            let afterMatch = true;
-            if (node.useRegex && node.pattern) {
-                let regex =
-                    new RegExp(node.pattern, "i");
-                beforeMatch =
-                    regex.test(lastState);
-                afterMatch =
-                    regex.test(newState);
+
+            // Cooldown prüfen
+            let now = Date.now();
+            if(node.lastTriggered[node.id] && (now - node.lastTriggered[node.id] < node.cooldown)) return null;
+
+            // Prüfen, ob sich die msg geändert hat
+            if(lastValue !== newValue){
+                let trigger = false;
+
+                // Richtung prüfen (nur relevant, wenn mustInclude gesetzt)
+                if(node.mustInclude){
+                    // Regex
+                    let match = false;
+                    if(node.useRegex && node.pattern){
+                        const regex = new RegExp(node.pattern, "i");
+                        match = regex.test(newValue);
+                    } else {
+                        match = newValue.includes(node.mustInclude);
+                    }
+
+                    if(!match){
+                        // Wert enthält nicht gesuchten Text → nur Status merken
+                        node.context().flow.set(flowKey, newValue);
+                        return null;
+                    }
+
+                    // Ein→Aus
+                    if((node.direction === "Ein→Aus" || node.direction === "Beide") &&
+                       lastValue.includes(node.mustInclude) && newValue.includes("Aus")) trigger = true;
+
+                    // Aus→Ein
+                    if((node.direction === "Aus→Ein" || node.direction === "Beide") &&
+                       lastValue.includes("Aus") && newValue.includes(node.mustInclude)) trigger = true;
+                } else {
+                    // Kein Textfilter → jede Änderung triggert
+                    trigger = true;
+                }
+
+                if(trigger){
+                    node.context().flow.set(flowKey, newValue);
+                    node.lastTriggered[node.id] = now;
+                    if(node.debug) node.warn(`Trigger ausgelöst: ${lastValue} → ${newValue}`);
+                    return msg;
+                }
+
+                // Änderung, aber kein Trigger → nur Status merken
+                node.context().flow.set(flowKey, newValue);
+                return null;
             }
-            else {
-                if (node.beforeText)
-                    beforeMatch =
-                        lastState.includes(
-                            node.beforeText
-                        );
-                if (node.afterText)
-                    afterMatch =
-                        newState.includes(
-                            node.afterText
-                        );
-            }
-            let trigger =
-                beforeMatch &&
-                afterMatch;
-            if (trigger) {
-                node.triggerCount++;
-                node.context().flow.set(
-                    `lastState_${sensorId}`,
-                    newState
-                );
-                node.lastTriggered[sensorId] = now;
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text:
-                        `${lastState} → ${newState} (#${node.triggerCount})`
-                });
-                if (node.debug)
-                    node.warn(
-                        `Trigger: ${lastState} → ${newState}`
-                    );
-                node.send(msg);
-                return;
-            }
-            node.context().flow.set(
-                `lastState_${sensorId}`,
-                newState
-            );
-            node.status({
-                fill: "blue",
-                shape: "ring",
-                text: "kein Trigger"
-            });
+
+            // keine Änderung → nichts tun
+            return null;
         });
     }
-    RED.nodes.registerType(
-        "custom-trigger",
-        CustomTriggerNode
-    );
-};
+    RED.nodes.registerType("custom-trigger", CustomTriggerNode);
+}

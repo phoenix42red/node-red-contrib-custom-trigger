@@ -1,19 +1,12 @@
 <script type="text/x-red" data-template-name="custom-trigger">
-	<div class="form-row">
-		<label for="node-input-name">Name</label>
-		<input type="text" id="node-input-name">
-	</div>
     <div class="form-row">
-        <label for="node-input-sensors">Topic Filter (optional)</label>
-        <input type="text" id="node-input-sensors" placeholder="z.B. sensor.status_battery">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name" placeholder="Optionaler Node-Name">
     </div>
     <div class="form-row">
-        <label for="node-input-previousMustInclude">Alter Wert muss enthalten</label>
-        <input type="text" id="node-input-previousMustInclude" placeholder="z.B. Ein">
-    </div>
-    <div class="form-row">
-        <label for="node-input-mustInclude">Neuer Wert muss enthalten</label>
-        <input type="text" id="node-input-mustInclude" placeholder="z.B. Aus">
+        <label for="node-input-mustInclude">Text enthalten (optional)</label>
+        <input type="text" id="node-input-mustInclude" placeholder="z.B. Ein">
+        <p class="form-tips">Wenn leer → jede Änderung in der Nachricht triggert</p>
     </div>
     <div class="form-row">
         <label for="node-input-useRegex">Regex benutzen</label>
@@ -26,8 +19,9 @@
     <div class="form-row">
         <label for="node-input-direction">Richtung</label>
         <select id="node-input-direction">
-            <option value="Vorher→Nachher">Vorher → Nachher</option>
-            <option value="Beide">Beide Richtungen</option>
+            <option value="Ein→Aus">Ein → Aus</option>
+            <option value="Aus→Ein">Aus → Ein</option>
+            <option value="Beide">Beide</option>
         </select>
     </div>
     <div class="form-row">
@@ -42,44 +36,19 @@
         <label for="node-input-debug">Debug</label>
         <input type="checkbox" id="node-input-debug">
     </div>
-</script>
-
-<script type="text/javascript">
-RED.nodes.registerType('custom-trigger',{
-    category: 'function',
-    color: '#E6E0F8',
-    defaults: {
-
-        name: {value:""},
-
-        sensors: {value:""},
-
-        mustInclude: {value:""},
-
-        oldMustContain: {value:""},
-
-        useRegex: {value:false},
-
-        pattern: {value:""},
-
-        direction: {value:"Beide"},
-
-        debug: {value:false},
-
-        triggerOnFirstMessage: {value:false},
-
-        cooldown: {value:0}
-
-    },
-    inputs:1,
-    outputs:1,
-    icon: "arrow-in.svg",
-    label: function() {
-        return this.name || "custom-trigger";
-    }
-});
+    <div class="form-tips">
+        <p>Dieser Node überwacht die gesamte eingehende Nachricht (<code>msg</code>).</p>
+        <p>Wenn "Text enthalten" gesetzt ist, triggert nur bei Änderungen, die den Text enthalten.</p>
+        <p>Richtung kann Ein→Aus, Aus→Ein oder Beide sein.</p>
+    </div>
 </script>
 
 <script type="text/x-red" data-help-name="custom-trigger">
-<p>Custom Trigger Node: feuert nur bei Textmatch + gewählter Richtung, prüft alten und neuen Wert. Unterstützt Regex, mehrere Sensoren, Cooldown und Sofort-Trigger.</p>
+    <p>Custom Trigger Node:</p>
+    <ul>
+        <li>Überwacht die komplette eingehende Nachricht (<code>msg</code>) auf Änderungen</li>
+        <li>Optionaler Textfilter: nur Nachrichten, die den Text enthalten, triggern</li>
+        <li>Richtung: Ein→Aus, Aus→Ein oder Beide</li>
+        <li>Unterstützt Regex, Debug, Cooldown und Trigger bei erster Nachricht</li>
+    </ul>
 </script>
