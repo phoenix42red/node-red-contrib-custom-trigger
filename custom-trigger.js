@@ -3,12 +3,16 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, config);
         const node = this;
 
+        // --------------------------
         // Node-Konfiguration
+        // --------------------------
         node.name = config.name || "";
-        node.mustInclude = config.mustInclude || "";       // Textfilter optional
+        node.msgPath = config.msgPath || "";           // z.B. payload, data.attributes.tomorrow_valid
+        node.mustInclude = config.mustInclude || "";   // Textfilter optional
+        node.oldMustContain = config.oldMustContain || ""; // Optional für alten Wert
         node.useRegex = config.useRegex || false;
         node.pattern = config.pattern || "";
-        node.direction = config.direction || "Beide";      // "Ein→Aus", "Aus→Ein", "Beide"
+        node.direction = config.direction || "Beide";  // "Ein→Aus", "Aus→Ein", "Beide"
         node.debug = config.debug || false;
         node.triggerOnFirstMessage = config.triggerOnFirstMessage || false;
         node.cooldown = config.cooldown || 0;
@@ -16,37 +20,67 @@ module.exports = function(RED) {
         node.lastTriggered = {};  // Zeitstempel für Cooldown
         const flowKey = `lastMsg_${node.id}`; // Flow-Context-Key
 
+        // --------------------------
+        // Eingehende Nachrichten verarbeiten
+        // --------------------------
         node.on('input', function(msg) {
-            // Aktueller Wert der kompletten Nachricht als String
-            let newValue = JSON.stringify(msg);
+            // --------------------------
+            // Wert aus msg anhand msgPath holen
+            // --------------------------
+            let newValue;
+            if(node.msgPath){
+                try {
+                    newValue = node.msgPath.split('.').reduce((obj, key) => obj && obj[key], msg);
+                } catch(e){
+                    newValue = undefined;
+                }
+            } else {
+                newValue = msg; // gesamte msg, falls kein Pfad
+            }
+
+            // Immer als String behandeln
+            newValue = (typeof newValue === "object") ? JSON.stringify(newValue) : String(newValue || "");
 
             // Letzter bekannter Wert
             let lastValue = node.context().flow.get(flowKey) || "";
 
+            // --------------------------
             // Trigger bei erster Nachricht
+            // --------------------------
             if(!lastValue && node.triggerOnFirstMessage){
                 node.context().flow.set(flowKey, newValue);
                 if(node.debug) node.warn(`Trigger (erste Nachricht) ausgelöst: ${newValue}`);
                 return msg;
             }
 
+            // --------------------------
             // Cooldown prüfen
+            // --------------------------
             let now = Date.now();
             if(node.lastTriggered[node.id] && (now - node.lastTriggered[node.id] < node.cooldown)) return null;
 
-            // Prüfen, ob sich die msg geändert hat
+            // --------------------------
+            // Prüfen, ob sich der Wert geändert hat
+            // --------------------------
             if(lastValue !== newValue){
                 let trigger = false;
 
-                // Richtung prüfen (nur relevant, wenn mustInclude gesetzt)
+                // --------------------------
+                // Textfilter prüfen (optional)
+                // --------------------------
                 if(node.mustInclude){
-                    // Regex
                     let match = false;
+
                     if(node.useRegex && node.pattern){
                         const regex = new RegExp(node.pattern, "i");
                         match = regex.test(newValue);
                     } else {
                         match = newValue.includes(node.mustInclude);
+                    }
+
+                    // Optional: alter Wert muss enthalten
+                    if(node.oldMustContain){
+                        if(!lastValue.includes(node.oldMustContain)) match = false;
                     }
 
                     if(!match){
@@ -55,13 +89,13 @@ module.exports = function(RED) {
                         return null;
                     }
 
-                    // Ein→Aus
+                    // Richtung prüfen
                     if((node.direction === "Ein→Aus" || node.direction === "Beide") &&
                        lastValue.includes(node.mustInclude) && newValue.includes("Aus")) trigger = true;
 
-                    // Aus→Ein
                     if((node.direction === "Aus→Ein" || node.direction === "Beide") &&
                        lastValue.includes("Aus") && newValue.includes(node.mustInclude)) trigger = true;
+
                 } else {
                     // Kein Textfilter → jede Änderung triggert
                     trigger = true;
@@ -79,9 +113,10 @@ module.exports = function(RED) {
                 return null;
             }
 
-            // keine Änderung → nichts tun
+            // Keine Änderung → nichts tun
             return null;
         });
     }
+
     RED.nodes.registerType("custom-trigger", CustomTriggerNode);
 }
