@@ -1,91 +1,18 @@
-<script type="text/x-red" data-template-name="custom-trigger">
-	<div class="form-row">
-  		<label for="node-input-msgPath">Pfad zum Wert in msg</label>
-	    <input type="text" id="node-input-msgPath" placeholder="z.B. payload">
- 		<p class="form-tips">Beliebiger Pfad innerhalb der Nachricht, der überwacht werden soll.</p>
-	</div>
-    <div class="form-row">
-        <label for="node-input-mustInclude">Text enthalten (optional)</label>
-        <input type="text" id="node-input-mustInclude" placeholder="z.B. Ein">
-        <p class="form-tips">Wenn leer → jede Änderung in der Nachricht triggert</p>
-    </div>
-    <div class="form-row">
-        <label for="node-input-oldMustContain">Alter Wert muss enthalten (optional)</label>
-        <input type="text" id="node-input-oldMustContain" placeholder="z.B. Aus">
-        <p class="form-tips">Optionaler Filter für vorherigen Wert</p>
-    </div>
-    <div class="form-row">
-        <label for="node-input-useRegex">Regex benutzen</label>
-        <input type="checkbox" id="node-input-useRegex">
-    </div>
-    <div class="form-row">
-        <label for="node-input-pattern">Regex-Muster</label>
-        <input type="text" id="node-input-pattern" placeholder="z.B. ^Ein|Start$">
-    </div>
-    <div class="form-row">
-        <label for="node-input-direction">Richtung</label>
-        <select id="node-input-direction">
-            <option value="Ein→Aus">Ein → Aus</option>
-            <option value="Aus→Ein">Aus → Ein</option>
-            <option value="Beide">Beide</option>
-        </select>
-    </div>
-    <div class="form-row">
-        <label for="node-input-triggerOnFirstMessage">Trigger bei erster Nachricht</label>
-        <input type="checkbox" id="node-input-triggerOnFirstMessage">
-    </div>
-    <div class="form-row">
-        <label for="node-input-cooldown">Cooldown (ms)</label>
-        <input type="number" id="node-input-cooldown" placeholder="0">
-    </div>
-    <div class="form-row">
-        <label for="node-input-debug">Debug</label>
-        <input type="checkbox" id="node-input-debug">
-    </div>
-</script>
-
-<script type="text/x-red" data-init="custom-trigger">
-    function initCustomTriggerNode() {
-        $("#node-input-name").val(this.name || "");
-        $("#node-input-msgPath").val(this.msgPath || "");
-        $("#node-input-mustInclude").val(this.mustInclude || "");
-        $("#node-input-oldMustContain").val(this.oldMustContain || "");
-        $("#node-input-useRegex").prop("checked", this.useRegex || false);
-        $("#node-input-pattern").val(this.pattern || "");
-        $("#node-input-direction").val(this.direction || "Beide");
-        $("#node-input-triggerOnFirstMessage").prop("checked", this.triggerOnFirstMessage || false);
-        $("#node-input-cooldown").val(this.cooldown || 0);
-        $("#node-input-debug").prop("checked", this.debug || false);
-    }
-</script>
-
-<script type="text/x-red" data-help-name="custom-trigger">
-    <p>Custom Trigger Node:</p>
-    <ul>
-        <li>Überwacht die komplette eingehende Nachricht (<code>msg</code>) auf Änderungen</li>
-        <li>Optionaler Textfilter: nur Nachrichten, die den Text enthalten, triggern</li>
-        <li>Optionaler Filter für den vorherigen Wert</li>
-        <li>Richtung: Ein→Aus, Aus→Ein oder Beide</li>
-        <li>Unterstützt Regex, Debug, Cooldown und Trigger bei erster Nachricht</li>
-        <li>Name des Nodes im Flow kann geändert werden</li>
-    </ul>
-</script>
-
 <script type="text/javascript">
 RED.nodes.registerType('custom-trigger',{
     category: 'function',
     color: '#E6E0F8',
     defaults: {
         name: {value:""},
-		msgPath: {value:""},
+        fieldPath: {value:"payload"},
         mustInclude: {value:""},
         oldMustContain: {value:""},
         useRegex: {value:false},
         pattern: {value:""},
         direction: {value:"Beide"},
-        debug: {value:false},
         triggerOnFirstMessage: {value:false},
-        cooldown: {value:0}
+        cooldown: {value:0},
+        debug: {value:false}
     },
     inputs:1,
     outputs:1,
@@ -94,9 +21,40 @@ RED.nodes.registerType('custom-trigger',{
         return this.name || "custom-trigger";
     }
 });
-
 </script>
 
+<script type="text/x-red" data-template-name="custom-trigger">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name">
+    </div>
 
+    <div class="form-row">
+        <label for="node-input-fieldPath">Feld-Pfad</label>
+        <input type="text" id="node-input-fieldPath" placeholder="z.B. data.attributes.tomorrow_valid">
+    </div>
 
+    <div class="form-row">
+        <label for="node-input-direction">Richtung</label>
+        <select id="node-input-direction">
+            <option value="Beide">Beide</option>
+            <option value="Aus→Ein">Aus→Ein</option>
+            <option value="Ein→Aus">Ein→Aus</option>
+        </select>
+    </div>
 
+    <div class="form-row">
+        <label for="node-input-triggerOnFirstMessage">Beim ersten Wert triggern</label>
+        <input type="checkbox" id="node-input-triggerOnFirstMessage">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-cooldown">Cooldown (Sekunden)</label>
+        <input type="number" id="node-input-cooldown">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-debug">Debug</label>
+        <input type="checkbox" id="node-input-debug">
+    </div>
+</script>
