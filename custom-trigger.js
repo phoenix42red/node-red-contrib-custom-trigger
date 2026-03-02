@@ -7,9 +7,9 @@ module.exports = function(RED) {
         // Node-Konfiguration
         // --------------------------
         node.name = config.name || "";
-        node.msgPath = config.msgPath || "";           // z.B. payload, data.attributes.tomorrow_valid
-        node.mustInclude = config.mustInclude || "";   // Optional: Neuer Wert muss enthalten
-        node.oldMustContain = config.oldMustContain || ""; // Optional: Alter Wert muss enthalten
+        node.msgPath = config.msgPath || "";           
+        node.mustInclude = config.mustInclude || "";   
+        node.oldMustContain = config.oldMustContain || ""; 
         node.useRegex = config.useRegex || false;
         node.pattern = config.pattern || "";
         node.debug = config.debug || false;
@@ -17,13 +17,13 @@ module.exports = function(RED) {
         node.cooldown = config.cooldown || 0;
 
         const flowKey = `lastValue_${node.id}`;
-        node.lastTriggered = {}; // Für Cooldown
+        node.lastTriggered = {};
 
         // --------------------------
         // Eingehende Nachrichten verarbeiten
         // --------------------------
         node.on('input', function(msg) {
-            // 1️⃣ Wert aus msg anhand msgPath holen
+            // Wert aus msg anhand msgPath holen
             let newValue;
             if(node.msgPath){
                 try {
@@ -32,33 +32,35 @@ module.exports = function(RED) {
                     newValue = undefined;
                 }
             } else {
-                newValue = msg; // gesamte msg, falls kein Pfad
+                newValue = msg; 
             }
 
-            // Als String behandeln
             if (typeof newValue === "object") newValue = JSON.stringify(newValue);
             else if(newValue === undefined || newValue === null) newValue = "";
             else newValue = String(newValue);
 
-            // 2️⃣ Letzter Wert
             let lastValue = node.context().flow.get(flowKey) || "";
 
-            // 3️⃣ Trigger bei erster Nachricht
+            // Trigger bei erster Nachricht
             if(!lastValue && node.triggerOnFirstMessage){
                 node.context().flow.set(flowKey, newValue);
+                node.status({fill:"blue",shape:"dot",text:`erste Nachricht: ${newValue}`});
                 if(node.debug) node.warn(`Trigger (erste Nachricht) ausgelöst: ${newValue}`);
                 return node.send(msg);
             }
 
-            // 4️⃣ Cooldown prüfen
+            // Cooldown prüfen
             let now = Date.now();
-            if(node.lastTriggered[node.id] && (now - node.lastTriggered[node.id] < node.cooldown)) return null;
+            if(node.lastTriggered[node.id] && (now - node.lastTriggered[node.id] < node.cooldown)) {
+                node.status({fill:"grey",shape:"ring",text:`Cooldown: ${newValue}`});
+                return null;
+            }
 
-            // 5️⃣ Prüfen, ob Wert geändert
+            // Prüfen, ob Wert geändert
             if(lastValue !== newValue){
                 let trigger = true;
 
-                // 5a️⃣ Neuer Wert muss Text enthalten
+                // Neuer Wert muss Text enthalten
                 if(node.mustInclude){
                     if(node.useRegex && node.pattern){
                         const regex = new RegExp(node.pattern, "i");
@@ -68,25 +70,28 @@ module.exports = function(RED) {
                     }
                 }
 
-                // 5b️⃣ Alter Wert muss Text enthalten
+                // Alter Wert muss Text enthalten
                 if(trigger && node.oldMustContain){
                     if(!lastValue.includes(node.oldMustContain)) trigger = false;
                 }
 
-                // 6️⃣ Wenn Trigger, dann msg weiterleiten
+                // Wenn Trigger, msg weiterleiten
                 if(trigger){
                     node.context().flow.set(flowKey, newValue);
                     node.lastTriggered[node.id] = now;
+                    node.status({fill:"green",shape:"dot",text:`Trigger: ${lastValue} → ${newValue}`});
                     if(node.debug) node.warn(`Trigger: ${lastValue} → ${newValue}`);
                     return node.send(msg);
                 }
 
-                // 7️⃣ Änderung, aber kein Trigger → nur Status merken
+                // Änderung, aber kein Trigger
                 node.context().flow.set(flowKey, newValue);
+                node.status({fill:"yellow",shape:"ring",text:`geändert (kein Trigger): ${lastValue} → ${newValue}`});
                 return null;
             }
 
-            // 8️⃣ Keine Änderung → nichts tun
+            // Keine Änderung
+            node.status({fill:"grey",shape:"ring",text:`keine Änderung: ${newValue}`});
             return null;
         });
     }
