@@ -5,7 +5,7 @@
     </div>
 	<div class="form-row">
 		<label for="node-input-msgPath">Pfad zur Nachricht</label>
-		<input type="text" id="node-input-msgPath" placeholder="z.B. payload oder data.attributes.tomorrow_valid">
+		<input type="text" id="node-input-msgPath" placeholder="z.B. msg.payload">
 		<p class="form-tips">Nur dieser Teil von msg wird überwacht. Leer → gesamte msg</p>
 	</div>
     <div class="form-row">
@@ -96,4 +96,5 @@ RED.nodes.registerType('custom-trigger',{
         return this.name || "custom-trigger";
     }
 });
+
 </script>
