@@ -1,8 +1,9 @@
 <script type="text/x-red" data-template-name="custom-trigger">
-    <div class="form-row">
-        <label for="node-input-name">Name</label>
-        <input type="text" id="node-input-name" placeholder="Optionaler Node-Name">
-    </div>
+	<div class="form-row">
+  		<label for="node-input-msgPath">Pfad zum Wert in msg</label>
+	    <input type="text" id="node-input-msgPath" placeholder="z.B. payload">
+ 		<p class="form-tips">Beliebiger Pfad innerhalb der Nachricht, der überwacht werden soll.</p>
+	</div>
 	<div class="form-row">
 		<label for="node-input-msgPath">Pfad zur Nachricht</label>
 		<input type="text" id="node-input-msgPath" placeholder="z.B. msg.payload">
@@ -98,3 +99,4 @@ RED.nodes.registerType('custom-trigger',{
 });
 
 </script>
+
