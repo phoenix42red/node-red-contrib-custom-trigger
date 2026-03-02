@@ -1,55 +1,152 @@
 module.exports = function(RED) {
     function CustomTriggerNode(config) {
         RED.nodes.createNode(this, config);
-        var node = this;
+        const node = this;
 		
-		node.name = config.name;
+       
+		// Einstellungen
+        node.name = config.name;
+        node.sensors = config.sensors
+            ? config.sensors.split(",").map(s => s.trim())
+            : [];
 
-        node.sensors = config.sensors || [];
-        node.previousMustInclude = config.previousMustInclude || "";
-        node.mustInclude = config.mustInclude || "";
+        node.beforeText = config.beforeText || "";
+        node.afterText = config.afterText || "";
         node.useRegex = config.useRegex || false;
         node.pattern = config.pattern || "";
-        node.direction = config.direction || "Beide";
+        node.triggerOnFirstMessage =
+            config.triggerOnFirstMessage || false;
+        node.cooldown = Number(config.cooldown) || 0;
         node.debug = config.debug || false;
-        node.triggerOnFirstMessage = config.triggerOnFirstMessage || false;
-        node.cooldown = config.cooldown || 0;
 
+        // interne Daten
         node.lastTriggered = {};
+        node.triggerCount = 0;
 
+        // Startstatus
+        node.status({
+            fill: "grey",
+            shape: "ring",
+            text: "bereit"
+        });
         node.on('input', function(msg) {
+            node.status({
+                fill: "blue",
+                shape: "ring",
+                text: "warte"
+            });
             const sensorId = msg.topic || "default";
-            if(node.sensors.length && !node.sensors.includes(sensorId)) return null;
-
-            let newState = msg.data?.event?.new_state?.state || msg.payload || "";
-            let lastState = node.context().flow.get(`lastState_${sensorId}`) || "";
-
-            if(!lastState && node.triggerOnFirstMessage){
-                node.context().flow.set(`lastState_${sensorId}`, newState);
-                if(node.debug) node.warn(`Trigger (erste Nachricht) Sensor ${sensorId}: ${newState}`);
-                return msg;
+            if (node.sensors.length) {
+                if (!node.sensors.includes(sensorId)) {
+                    return;
+                }
             }
-
-            let now = Date.now();
-            if(node.lastTriggered[sensorId] && (now - node.lastTriggered[sensorId] < node.cooldown)) return null;
-
-            let matchNew = node.mustInclude ? (node.useRegex ? new RegExp(node.pattern,"i").test(newState) : newState.includes(node.mustInclude)) : true;
-            let matchOld = node.previousMustInclude ? lastState.includes(node.previousMustInclude) : true;
-
-            let trigger = false;
-            if(matchOld && matchNew){
-                if(node.direction === "Beide" || node.direction === "Vorher→Nachher") trigger = true;
+            let newState =
+                msg.data?.event?.new_state?.state
+                || msg.payload
+                || "";
+            let lastState =
+                node.context().flow.get(
+                    `lastState_${sensorId}`
+                ) || "";
+            if (newState === "") {
+                node.status({
+                    fill: "red",
+                    shape: "dot",
+                    text: "kein State"
+                });
+                return;
             }
-
-            if(trigger){
-                node.context().flow.set(`lastState_${sensorId}`, newState);
-                node.lastTriggered[sensorId] = now;
-                if(node.debug) node.warn(`Trigger ausgelöst: ${lastState} → ${newState} (Sensor: ${sensorId})`);
+            if (!lastState && node.triggerOnFirstMessage) {
+                node.context().flow.set(
+                    `lastState_${sensorId}`,
+                    newState
+                );
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text: "erste Nachricht"
+                });
                 node.send(msg);
-            } else {
-                node.context().flow.set(`lastState_${sensorId}`, newState);
+                return;
             }
+            let now = Date.now();
+            if (
+                node.lastTriggered[sensorId] &&
+                (now - node.lastTriggered[sensorId]
+                    < node.cooldown)
+            ) {
+                let rest = Math.ceil(
+
+                    (node.cooldown -
+                    (now - node.lastTriggered[sensorId]))
+                    / 1000
+                );
+                node.status({
+                    fill: "yellow",
+                    shape: "ring",
+                    text: `Cooldown ${rest}s`
+                });
+                return;
+            }
+            let beforeMatch = true;
+            let afterMatch = true;
+            if (node.useRegex && node.pattern) {
+                let regex =
+                    new RegExp(node.pattern, "i");
+                beforeMatch =
+                    regex.test(lastState);
+                afterMatch =
+                    regex.test(newState);
+            }
+            else {
+                if (node.beforeText)
+                    beforeMatch =
+                        lastState.includes(
+                            node.beforeText
+                        );
+                if (node.afterText)
+                    afterMatch =
+                        newState.includes(
+                            node.afterText
+                        );
+            }
+            let trigger =
+                beforeMatch &&
+                afterMatch;
+            if (trigger) {
+                node.triggerCount++;
+                node.context().flow.set(
+                    `lastState_${sensorId}`,
+                    newState
+                );
+                node.lastTriggered[sensorId] = now;
+                node.status({
+                    fill: "green",
+                    shape: "dot",
+                    text:
+                        `${lastState} → ${newState} (#${node.triggerCount})`
+                });
+                if (node.debug)
+                    node.warn(
+                        `Trigger: ${lastState} → ${newState}`
+                    );
+                node.send(msg);
+                return;
+            }
+            node.context().flow.set(
+                `lastState_${sensorId}`,
+                newState
+            );
+            node.status({
+                fill: "blue",
+                shape: "ring",
+                text: "kein Trigger"
+            });
         });
     }
-    RED.nodes.registerType("custom-trigger", CustomTriggerNode);
-}
+    RED.nodes.registerType(
+        "custom-trigger",
+        CustomTriggerNode
+    );
+};
