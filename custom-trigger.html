@@ -52,6 +52,7 @@
 <script type="text/x-red" data-init="custom-trigger">
     function initCustomTriggerNode() {
         $("#node-input-name").val(this.name || "");
+        $("#node-input-msgPath").val(this.msgPath || "");
         $("#node-input-mustInclude").val(this.mustInclude || "");
         $("#node-input-oldMustContain").val(this.oldMustContain || "");
         $("#node-input-useRegex").prop("checked", this.useRegex || false);
@@ -100,5 +101,6 @@ RED.nodes.registerType('custom-trigger',{
 });
 
 </script>
+
 
 
