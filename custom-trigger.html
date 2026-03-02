@@ -1,3 +1,7 @@
+<div class="form-row">
+    <label for="node-input-name">Name</label>
+    <input type="text" id="node-input-name">
+</div>
 <script type="text/x-red" data-template-name="custom-trigger">
     <div class="form-row">
         <label for="node-input-sensors">Sensoren (Topic)</label>
@@ -44,23 +48,25 @@
 RED.nodes.registerType('custom-trigger',{
     category: 'function',
     color: '#a6bbcf',
+
     defaults: {
         name: {value:""},
         sensors: {value:""},
-        previousMustInclude: {value:""},
-        mustInclude: {value:""},
+        mustInclude: {value:"Ein"},
         useRegex: {value:false},
         pattern: {value:""},
-        direction: {value:"Vorher→Nachher"},
+        direction: {value:"Ein→Aus"},
         triggerOnFirstMessage: {value:false},
         cooldown: {value:0},
         debug: {value:false}
     },
+
     inputs:1,
     outputs:1,
-    icon: "bridge.png",
+    icon: "switch.png",
+
     label: function() {
-        return this.name||"custom-trigger";
+        return this.name || "custom-trigger";
     }
 });
 </script>

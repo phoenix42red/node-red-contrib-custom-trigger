@@ -2,6 +2,8 @@ module.exports = function(RED) {
     function CustomTriggerNode(config) {
         RED.nodes.createNode(this, config);
         var node = this;
+		
+		node.name = config.name;
 
         node.sensors = config.sensors || [];
         node.previousMustInclude = config.previousMustInclude || "";
