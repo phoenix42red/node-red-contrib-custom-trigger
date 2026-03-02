@@ -1,172 +1,84 @@
 module.exports = function(RED) {
-
     function CustomTriggerNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
-        // ==========================
-        // Konfiguration
-        // ==========================
-        node.name = config.name || "";
-        node.msgPath = config.msgPath || "";
-        node.mustInclude = config.mustInclude || "";
-        node.oldMustContain = config.oldMustContain || "";
-        node.useRegex = config.useRegex || false;
-        node.pattern = config.pattern || "";
-        node.direction = config.direction || "Beide"; // "Ein→Aus", "Aus→Ein", "Beide"
-        node.debug = config.debug || false;
+        node.fieldPath = config.fieldPath || "payload";
+        node.direction = config.direction || "Beide";
         node.triggerOnFirstMessage = config.triggerOnFirstMessage || false;
         node.cooldown = Number(config.cooldown) || 0;
+        node.debug = config.debug || false;
 
-        const flowKey = `lastMsg_${node.id}`;
-        let lastTriggeredTime = 0;
+        let lastValue = null;
+        let lastTriggerTime = 0;
 
-        // ==========================
-        // Eingehende Nachricht
-        // ==========================
+        function getByPath(obj, path) {
+            return path.split(".").reduce((o, p) => o ? o[p] : undefined, obj);
+        }
+
+        function normalize(val) {
+            if (val === undefined || val === null) return "";
+            return String(val).toLowerCase();
+        }
+
         node.on('input', function(msg) {
 
-            // --------------------------
-            // Wert anhand msgPath holen
-            // --------------------------
-            let newValue;
+            const rawValue = getByPath(msg, node.fieldPath);
+            const newValue = normalize(rawValue);
 
-            if (node.msgPath) {
-                try {
-                    newValue = node.msgPath
-                        .split('.')
-                        .reduce((obj, key) => obj && obj[key], msg);
-                } catch (e) {
-                    newValue = undefined;
-                }
-            } else {
-                newValue = msg;
+            if (newValue === "") return;
+
+            if (lastValue === null) {
+                lastValue = newValue;
+                if (!node.triggerOnFirstMessage) return;
             }
 
-            // --------------------------
-            // Saubere String-Konvertierung
-            // --------------------------
-            if (typeof newValue === "object") {
-                newValue = JSON.stringify(newValue);
-            } else if (newValue === undefined || newValue === null) {
-                newValue = "";
-            } else {
-                newValue = String(newValue);
-            }
-
-            // Letzten gespeicherten Wert holen
-            let lastValue = node.context().flow.get(flowKey);
-            if (lastValue === undefined || lastValue === null) {
-                lastValue = "";
-            }
-
-            // --------------------------
-            // Erste Nachricht Trigger
-            // --------------------------
-            if (!lastValue && node.triggerOnFirstMessage) {
-                node.context().flow.set(flowKey, newValue);
-                node.status({ fill: "blue", shape: "dot", text: "Erste Nachricht" });
-                if (node.debug) node.warn(`Trigger (erste Nachricht): ${newValue}`);
-                return msg;
-            }
-
-            // --------------------------
-            // Cooldown prüfen
-            // --------------------------
-            const now = Date.now();
-            if (node.cooldown > 0 && (now - lastTriggeredTime < node.cooldown)) {
-                return null;
-            }
-
-            // --------------------------
-            // Prüfen ob sich Wert geändert hat
-            // --------------------------
-            if (lastValue === newValue) {
-                node.status({ fill: "grey", shape: "ring", text: "Keine Änderung" });
-                return null;
-            }
+            if (newValue === lastValue) return;
 
             let trigger = false;
 
-            // ==========================
-            // Textfilter prüfen
-            // ==========================
-            let match = true;
+            const wasTrue  = ["true","1","ein","on"].includes(lastValue);
+            const wasFalse = ["false","0","aus","off"].includes(lastValue);
 
-            if (node.mustInclude) {
-
-                if (node.useRegex && node.pattern) {
-                    try {
-                        const regex = new RegExp(node.pattern, "i");
-                        match = regex.test(newValue);
-                    } catch (e) {
-                        node.error("Ungültiger Regex-Ausdruck");
-                        return null;
-                    }
-                } else {
-                    match = newValue.includes(node.mustInclude);
-                }
-
-                // Optional: alter Wert muss enthalten
-                if (node.oldMustContain) {
-                    if (!lastValue.includes(node.oldMustContain)) {
-                        match = false;
-                    }
-                }
-
-                if (!match) {
-                    node.context().flow.set(flowKey, newValue);
-                    node.status({ fill: "yellow", shape: "ring", text: "Filter nicht erfüllt" });
-                    return null;
-                }
-            }
-
-            // ==========================
-            // Richtungsprüfung
-            // ==========================
-            const wasEin = lastValue.includes("Ein");
-            const wasAus = lastValue.includes("Aus");
-            const isEin  = newValue.includes("Ein");
-            const isAus  = newValue.includes("Aus");
+            const isTrue   = ["true","1","ein","on"].includes(newValue);
+            const isFalse  = ["false","0","aus","off"].includes(newValue);
 
             if (node.direction === "Beide") {
                 trigger = true;
             }
-            else if (node.direction === "Ein→Aus" && wasEin && isAus) {
+            else if (node.direction === "Aus→Ein" && wasFalse && isTrue) {
                 trigger = true;
             }
-            else if (node.direction === "Aus→Ein" && wasAus && isEin) {
+            else if (node.direction === "Ein→Aus" && wasTrue && isFalse) {
                 trigger = true;
             }
 
-            // ==========================
-            // Trigger auslösen
-            // ==========================
-            if (trigger) {
-
-                node.context().flow.set(flowKey, newValue);
-                lastTriggeredTime = now;
-
-                node.status({
-                    fill: "green",
-                    shape: "dot",
-                    text: `${lastValue} → ${newValue}`
-                });
-
-                if (node.debug) {
-                    node.warn(`Trigger ausgelöst: ${lastValue} → ${newValue}`);
-                }
-
-                return msg;
+            if (!trigger) {
+                lastValue = newValue;
+                return;
             }
 
-            // Änderung aber keine passende Richtung
-            node.context().flow.set(flowKey, newValue);
-            node.status({ fill: "grey", shape: "ring", text: "Richtung nicht passend" });
+            const now = Date.now();
+            if (node.cooldown > 0 && now - lastTriggerTime < node.cooldown * 1000) {
+                return;
+            }
 
-            return null;
+            lastTriggerTime = now;
+
+            if (node.debug) {
+                node.warn(`Trigger: ${lastValue} → ${newValue}`);
+            }
+
+            node.status({
+                fill: "green",
+                shape: "dot",
+                text: `${lastValue} → ${newValue}`
+            });
+
+            lastValue = newValue;
+            node.send(msg);
         });
     }
 
     RED.nodes.registerType("custom-trigger", CustomTriggerNode);
-}
+};
