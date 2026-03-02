@@ -15,7 +15,7 @@ module.exports = function(RED) {
         node.useRegex = config.useRegex || false;
         node.pattern = config.pattern || "";
         node.triggerOnFirstMessage =
-            config.triggerOnFirstMessage || false;
+            config.triggerOnFirstMessage || true;
         node.cooldown = Number(config.cooldown) || 0;
         node.debug = config.debug || false;
 
