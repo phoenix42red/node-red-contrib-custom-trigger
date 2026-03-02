@@ -9,6 +9,11 @@
         <p class="form-tips">Wenn leer → jede Änderung in der Nachricht triggert</p>
     </div>
     <div class="form-row">
+        <label for="node-input-oldMustContain">Alter Wert muss enthalten (optional)</label>
+        <input type="text" id="node-input-oldMustContain" placeholder="z.B. Aus">
+        <p class="form-tips">Optionaler Filter für vorherigen Wert</p>
+    </div>
+    <div class="form-row">
         <label for="node-input-useRegex">Regex benutzen</label>
         <input type="checkbox" id="node-input-useRegex">
     </div>
@@ -36,11 +41,20 @@
         <label for="node-input-debug">Debug</label>
         <input type="checkbox" id="node-input-debug">
     </div>
-    <div class="form-tips">
-        <p>Dieser Node überwacht die gesamte eingehende Nachricht (<code>msg</code>).</p>
-        <p>Wenn "Text enthalten" gesetzt ist, triggert nur bei Änderungen, die den Text enthalten.</p>
-        <p>Richtung kann Ein→Aus, Aus→Ein oder Beide sein.</p>
-    </div>
+</script>
+
+<script type="text/x-red" data-init="custom-trigger">
+    function initCustomTriggerNode() {
+        $("#node-input-name").val(this.name || "");
+        $("#node-input-mustInclude").val(this.mustInclude || "");
+        $("#node-input-oldMustContain").val(this.oldMustContain || "");
+        $("#node-input-useRegex").prop("checked", this.useRegex || false);
+        $("#node-input-pattern").val(this.pattern || "");
+        $("#node-input-direction").val(this.direction || "Beide");
+        $("#node-input-triggerOnFirstMessage").prop("checked", this.triggerOnFirstMessage || false);
+        $("#node-input-cooldown").val(this.cooldown || 0);
+        $("#node-input-debug").prop("checked", this.debug || false);
+    }
 </script>
 
 <script type="text/x-red" data-help-name="custom-trigger">
@@ -48,7 +62,33 @@
     <ul>
         <li>Überwacht die komplette eingehende Nachricht (<code>msg</code>) auf Änderungen</li>
         <li>Optionaler Textfilter: nur Nachrichten, die den Text enthalten, triggern</li>
+        <li>Optionaler Filter für den vorherigen Wert</li>
         <li>Richtung: Ein→Aus, Aus→Ein oder Beide</li>
         <li>Unterstützt Regex, Debug, Cooldown und Trigger bei erster Nachricht</li>
+        <li>Name des Nodes im Flow kann geändert werden</li>
     </ul>
+</script>
+
+<script type="text/javascript">
+RED.nodes.registerType('custom-trigger',{
+    category: 'function',
+    color: '#E6E0F8',
+    defaults: {
+        name: {value:""},
+        mustInclude: {value:""},
+        oldMustContain: {value:""},
+        useRegex: {value:false},
+        pattern: {value:""},
+        direction: {value:"Beide"},
+        debug: {value:false},
+        triggerOnFirstMessage: {value:false},
+        cooldown: {value:0}
+    },
+    inputs:1,
+    outputs:1,
+    icon: "arrow-in.svg",
+    label: function() {
+        return this.name || "custom-trigger";
+    }
+});
 </script>
