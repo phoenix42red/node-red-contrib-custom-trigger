@@ -1,60 +1,86 @@
+<script type="text/x-red" data-template-name="custom-trigger">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name" placeholder="Optionaler Node-Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-msgPath">Pfad zum Wert in msg</label>
+        <input type="text" id="node-input-msgPath" placeholder="z.B. payload oder data.attributes.tomorrow_valid">
+        <p class="form-tips">Nur dieser Teil von msg wird überwacht. Leer → gesamte msg</p>
+    </div>
+    <div class="form-row">
+        <label for="node-input-mustInclude">Neuer Wert muss enthalten (optional)</label>
+        <input type="text" id="node-input-mustInclude" placeholder="z.B. Ein">
+    </div>
+    <div class="form-row">
+        <label for="node-input-oldMustContain">Alter Wert muss enthalten (optional)</label>
+        <input type="text" id="node-input-oldMustContain" placeholder="z.B. Aus">
+    </div>
+    <div class="form-row">
+        <label for="node-input-useRegex">Regex benutzen</label>
+        <input type="checkbox" id="node-input-useRegex">
+    </div>
+    <div class="form-row">
+        <label for="node-input-pattern">Regex-Muster</label>
+        <input type="text" id="node-input-pattern" placeholder="z.B. ^Ein|Start$">
+    </div>
+    <div class="form-row">
+        <label for="node-input-triggerOnFirstMessage">Trigger bei erster Nachricht</label>
+        <input type="checkbox" id="node-input-triggerOnFirstMessage">
+    </div>
+    <div class="form-row">
+        <label for="node-input-cooldown">Cooldown (ms)</label>
+        <input type="number" id="node-input-cooldown" placeholder="0">
+    </div>
+    <div class="form-row">
+        <label for="node-input-debug">Debug</label>
+        <input type="checkbox" id="node-input-debug">
+    </div>
+</script>
+
+<script type="text/x-red" data-init="custom-trigger">
+function initCustomTriggerNode() {
+    $("#node-input-name").val(this.name || "");
+    $("#node-input-msgPath").val(this.msgPath || "");
+    $("#node-input-mustInclude").val(this.mustInclude || "");
+    $("#node-input-oldMustContain").val(this.oldMustContain || "");
+    $("#node-input-useRegex").prop("checked", this.useRegex || false);
+    $("#node-input-pattern").val(this.pattern || "");
+    $("#node-input-triggerOnFirstMessage").prop("checked", this.triggerOnFirstMessage || false);
+    $("#node-input-cooldown").val(this.cooldown || 0);
+    $("#node-input-debug").prop("checked", this.debug || false);
+}
+</script>
+
+<script type="text/x-red" data-help-name="custom-trigger">
+<p>Custom Trigger Node:</p>
+<ul>
+    <li>Überwacht einen spezifischen Wert in <code>msg</code> (msgPath)</li>
+    <li>Leitet msg nur weiter, wenn sich der Wert ändert</li>
+    <li>Optionaler Filter: Alter Wert / Neuer Wert muss Text enthalten</li>
+    <li>Unterstützt Regex, Debug, Cooldown und Trigger bei erster Nachricht</li>
+    <li>Name des Nodes im Flow kann geändert werden</li>
+</ul>
+</script>
+
 <script type="text/javascript">
 RED.nodes.registerType('custom-trigger',{
     category: 'function',
     color: '#E6E0F8',
     defaults: {
         name: {value:""},
-        fieldPath: {value:"payload"},
+        msgPath: {value:""},
         mustInclude: {value:""},
         oldMustContain: {value:""},
         useRegex: {value:false},
         pattern: {value:""},
-        direction: {value:"Beide"},
+        debug: {value:false},
         triggerOnFirstMessage: {value:false},
-        cooldown: {value:0},
-        debug: {value:false}
+        cooldown: {value:0}
     },
     inputs:1,
     outputs:1,
     icon: "arrow-in.svg",
-    label: function() {
-        return this.name || "custom-trigger";
-    }
+    label: function() { return this.name || "custom-trigger"; }
 });
-</script>
-
-<script type="text/x-red" data-template-name="custom-trigger">
-    <div class="form-row">
-        <label for="node-input-name">Name</label>
-        <input type="text" id="node-input-name">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-fieldPath">Feld-Pfad</label>
-        <input type="text" id="node-input-fieldPath" placeholder="z.B. data.attributes.tomorrow_valid">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-direction">Richtung</label>
-        <select id="node-input-direction">
-            <option value="Beide">Beide</option>
-            <option value="Aus→Ein">Aus→Ein</option>
-            <option value="Ein→Aus">Ein→Aus</option>
-        </select>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-triggerOnFirstMessage">Beim ersten Wert triggern</label>
-        <input type="checkbox" id="node-input-triggerOnFirstMessage">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-cooldown">Cooldown (Sekunden)</label>
-        <input type="number" id="node-input-cooldown">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-debug">Debug</label>
-        <input type="checkbox" id="node-input-debug">
-    </div>
 </script>
