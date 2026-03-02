@@ -1,8 +1,8 @@
-<div class="form-row">
-    <label for="node-input-name">Name</label>
-    <input type="text" id="node-input-name">
-</div>
 <script type="text/x-red" data-template-name="custom-trigger">
+	<div class="form-row">
+		<label for="node-input-name">Name</label>
+		<input type="text" id="node-input-name">
+	</div>
     <div class="form-row">
         <label for="node-input-sensors">Sensoren (Topic)</label>
         <input type="text" id="node-input-sensors" placeholder="Kommagetrennt">
@@ -52,7 +52,7 @@ RED.nodes.registerType('custom-trigger',{
     defaults: {
         name: {value:""},
         sensors: {value:""},
-        mustInclude: {value:"Ein"},
+        mustInclude: {value:""},
         useRegex: {value:false},
         pattern: {value:""},
         direction: {value:"Ein→Aus"},
